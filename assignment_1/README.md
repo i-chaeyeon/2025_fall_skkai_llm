@@ -23,7 +23,7 @@ and the environment will be automatically solved and activated when necessary.
 
 
 ```sh
-uv run pytest
+python3 -m uv run pytest 
 ```
 
 Initially, all tests should fail with `NotImplementedError`s.
