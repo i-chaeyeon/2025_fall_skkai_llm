@@ -93,15 +93,15 @@ def run_train_bpe_impl(input_path, vocab_size, special_tokens, **kwargs):
 
     return vocab, merges
 
-if __name__ == '__main__':
-    vocab, merges = run_train_bpe_impl(
-        "/Users/i_chae_yeon/Desktop/SKKU/7학기/2025_fall_skkai_llm/data/TinyStoriesV2-GPT4-valid_small_input.txt",
-        10000,
-        ["<|endoftext|>"]
-    )
+# if __name__ == '__main__':
+#     vocab, merges = run_train_bpe_impl(
+#         "/Users/i_chae_yeon/Desktop/SKKU/7학기/2025_fall_skkai_llm/data/TinyStoriesV2-GPT4-valid_small_input.txt",
+#         10000,
+#         ["<|endoftext|>"]
+#     )
     
-    print(vocab)
-    print(merges)
+#     print(vocab)
+#     print(merges)
 
 
 # {
