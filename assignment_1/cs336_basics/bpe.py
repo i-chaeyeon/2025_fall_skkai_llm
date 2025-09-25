@@ -3,6 +3,21 @@ import regex as re
 from collections import Counter
 from typing import List, Tuple, Dict
 import os
+import multiprocessing
+from functools import partial
+
+def process_chunk(chunk: str, pat_str: str) -> Counter:
+    """텍스트 청크 하나를 받아 사전 토큰화하고 단어 빈도를 계산합니다."""
+    counts = Counter()
+    if not chunk:
+        return counts
+        
+    pre_tokens = [m.group(0) for m in re.finditer(pat_str, chunk)]
+    for pre_token in pre_tokens:
+        b = pre_token.encode("utf-8")
+        seq = tuple(bytes([x]) for x in b)
+        counts[seq] += 1
+    return counts
 
 def run_train_bpe_impl(input_path, vocab_size, special_tokens, **kwargs):
 
@@ -20,7 +35,6 @@ def run_train_bpe_impl(input_path, vocab_size, special_tokens, **kwargs):
 
     ## Pre-tokenization
     PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-    counts = Counter()
 
     special_pattern = "|".join(re.escape(s) for s in special_tokens)
     
@@ -29,17 +43,16 @@ def run_train_bpe_impl(input_path, vocab_size, special_tokens, **kwargs):
 
     chunks = re.split(f"({special_pattern})", text)
 
-    for chunk in chunks:
+    ## Multiprocessing
+    chunks_to_process = [chunk for chunk in chunks if chunk and chunk not in special_tokens]
+    
+    with multiprocessing.Pool() as pool:
+        worker_func = partial(process_chunk, pat_str=PAT)
+        list_of_counts = pool.map(worker_func, chunks_to_process)
 
-        if special_tokens and chunk in special_tokens:
-            continue
-
-        pre_tokens = [m.group(0) for m in re.finditer(PAT, chunk)]
-
-        for pre_token in pre_tokens:
-            b = pre_token.encode("utf-8")
-            seq = tuple(bytes([x]) for x in b)
-            counts[seq] += 1
+    counts = Counter()
+    for local_counts in list_of_counts:
+        counts.update(local_counts)
 
 
     ## Compute BPE Merges
@@ -80,14 +93,16 @@ def run_train_bpe_impl(input_path, vocab_size, special_tokens, **kwargs):
 
     return vocab, merges
 
-# vocab, merges = run_train_bpe_impl(
-#         "debug_input.txt",
-#         267,
-#         ["<|endoftext|>"]
-#     )
+if __name__ == '__main__':
+    vocab, merges = run_train_bpe_impl(
+        "/Users/i_chae_yeon/Desktop/SKKU/7학기/2025_fall_skkai_llm/data/TinyStoriesV2-GPT4-valid_small_input.txt",
+        10000,
+        ["<|endoftext|>"]
+    )
+    
+    print(vocab)
+    print(merges)
 
-# print(vocab)
-# print(merges)
 
 # {
 #     0: b'\x00', 1: b'\x01', 2: b'\x02', 3: b'\x03', 4: b'\x04', 5: b'\x05', 6: b'\x06', 7: b'\x07', 
